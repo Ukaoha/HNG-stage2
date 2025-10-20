@@ -312,6 +312,13 @@ class StringAnalyzer {
         $this->saveData($data);
 
         http_response_code(204);
+
+        
+    }
+
+    public function clearAllStrings() {
+        $this->saveData([]);
+        http_response_code(204);
     }
 }
 
@@ -321,18 +328,39 @@ $uri = rtrim($uri, '/');
 $analyzer = new StringAnalyzer();
 
 // Important: Check natural language endpoint BEFORE generic /strings/{value}
-if ($uri === '/strings/filter-by-natural-language' && $_SERVER['REQUEST_METHOD'] === 'GET') {
-    $analyzer->filterByNaturalLanguage();
-} elseif ($uri === '/strings' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    $analyzer->postString();
-} elseif ($uri === '/strings' && $_SERVER['REQUEST_METHOD'] === 'GET') {
-    $analyzer->getAllStrings();
-} elseif (preg_match('#^/strings/(.+)$#', $uri, $matches) && $_SERVER['REQUEST_METHOD'] === 'GET') {
-    $analyzer->getString(urldecode($matches[1]));
-} elseif (preg_match('#^/strings/(.+)$#', $uri, $matches) && $_SERVER['REQUEST_METHOD'] === 'DELETE') {
-    $analyzer->deleteString(urldecode($matches[1]));
-} else {
-    http_response_code(404);
-    echo json_encode(['error' => 'Endpoint not found']);
+$method = $_SERVER['REQUEST_METHOD'];
+
+if ($uri === '/strings/clear' && $method === 'DELETE') {
+    $analyzer->clearAllStrings();
+    exit;
 }
+
+if ($uri === '/strings/filter-by-natural-language' && $method === 'GET') {
+    $analyzer->filterByNaturalLanguage();
+    exit;
+}
+
+if ($uri === '/strings' && $method === 'POST') {
+    $analyzer->postString();
+    exit;
+}
+
+if ($uri === '/strings' && $method === 'GET') {
+    $analyzer->getAllStrings();
+    exit;
+}
+
+if (preg_match('#^/strings/(.+)$#', $uri, $matches)) {
+    $value = urldecode($matches[1]);
+    if ($method === 'GET') {
+        $analyzer->getString($value);
+        exit;
+    } elseif ($method === 'DELETE') {
+        $analyzer->deleteString($value);
+        exit;
+    }
+}
+
+http_response_code(404);
+echo json_encode(['error' => 'Endpoint not found']);
 ?>
